@@ -1,24 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import argparse
 import cv2
-
-# Using an argument parser for color, bins, and width of the frame
-parser = argparse.ArgumentParser()
-
-parser.add_argument('-c', '--color', type=str, default='gray')
-parser.add_argument('-b', '--bins', type=int, default=16)
-parser.add_argument('-w', '--width', type=int, default=0)
-
-args = vars(parser.parse_args())
 
 # Initialize the video capture
 cap = cv2.VideoCapture(0)
 
-# Define color, bins and width variables
-color = args['color']
-bins = args['bins']
-resizeWidth = args['width']
+# Define number of bins 
+bins = 17
 
 # Plot configurations
 fig, ax = plt.subplots()
@@ -52,13 +40,6 @@ while True:
     if not ret:
         print("Can't receive frame.")
         break
-
-    # Resize frame to width if wanted
-    if resizeWidth > 0:
-        (height, width) = frame.shape[:2]
-        resizeHeight = int(float(resizeWidth / width) * height)
-        frame = cv2.resize(frame, (resizeWidth, resizeHeight),
-            interpolation=cv2.INTER_AREA)
 
     # Normalize histograms based on number of pixels per frame
     numPixels = np.prod(frame.shape[:2])
