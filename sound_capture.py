@@ -11,7 +11,7 @@ from tkinter import TclError
 CHUNK = 1024 * 2             # samples per frame
 FORMAT = pyaudio.paInt16     # audio format 
 CHANNELS = 1                 # single channel for microphone (2 for stereo)
-RATE = 44100                 # samples per second (44.1 kHz)
+RATE = 22050                 # samples per seconds (sampling rate)
 
 
 #-----figure and axes-----#
