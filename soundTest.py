@@ -1,40 +1,34 @@
 import pyaudio
 import struct
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
-import matplotlib.pyplot as plt
 
-# Set up pyadio
-pya = pyaudio.PyAudio()
-FORMAT = pyaudio.paInt16    # audio format
-CHANNELS = 1                 # single channel for microphone (2 for stereo)
-RATE = 20000                # samples per seconds (sampling rate)
-CHUNK = int(RATE/20)        # samples per frame
-THRESHOLD = 50            # minimun audio recorded
+mic = pyaudio.PyAudio()
 
-# Create new figure
-fig = plt.figure()
-# fig, ax = plt.subplots(2)
-# x = np.arange(0, 4 * CHUNK, 2)
-# y = np.arange(0, 4 * CHUNK, 2)
-# ax[0].set_ylim(0, 255)
-# plot0, = ax[0].plot(x, y)
-plt.show(block=False)
+INTERVAL = 0.32
 
-# To record audio a stream needs to be opened
-stream = pya.open(
-    format=FORMAT,
-    channels=CHANNELS,
-    rate=RATE,
-    input=True,
-    output=True,
-    frames_per_buffer=CHUNK
-)
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 48000
+CHUNK = int(RATE * INTERVAL)
+
+stream = mic.open(format=FORMAT, channels=CHANNELS, rate=RATE,
+                  input=True, output=True, frames_per_buffer=CHUNK)
+
+plt.ylabel('Frequency [Hz]')
+plt.xlabel('Time [sec]')
+
 while True:
-    data = stream.read(CHUNK)
-    data = np.array(struct.unpack(str(2 * CHUNK) + 'B', data), dtype='b')
+    data = stream.read(CHUNK, exception_on_overflow=False)
+    data = np.frombuffer(data, dtype='b')
     f, t, Sxx = signal.spectrogram(data, fs=CHUNK)
     dBS = 10 * np.log10(Sxx)
-    #ax[0].plot(x, 10*np.log10(data+128))
-    plt.pcolormesh(t, f, dBS)
-    plt.pause(0.005)
+    plt.clf()
+    plt.pcolormesh(t, f, dBS, shading='gouraud', cmap=plt.cm.get_cmap('Dark2'))
+    plt.colorbar()
+    plt.pause(0.001)
+
+stream.stop_stream()
+stream.close()
+mic.terminate()
