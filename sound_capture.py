@@ -1,4 +1,5 @@
 import pyaudio
+import audioop
 import os
 import struct
 import numpy as np
@@ -11,7 +12,8 @@ from tkinter import TclError
 CHUNK = 1024 * 2             # samples per frame
 FORMAT = pyaudio.paInt16     # audio format 
 CHANNELS = 1                 # single channel for microphone (2 for stereo)
-RATE = 44100                 # samples per second (44.1 kHz)
+RATE = 22050                 # samples per seconds (sampling rate)
+THRESHOLD = 50               # minimun audio recorded
 
 
 #-----figure and axes-----#
@@ -82,25 +84,40 @@ while True:
     # binary data
     # pyaudio usa un formato di dati orribile che poi bisogna
     # far diventare plottabile usando struct
-    data = stream.read(CHUNK)  
+    data = stream.read(CHUNK)
+
+    # calculate the volume
+    rms = audioop.rms(data, 2)     
+
+    #threshold check
+    # se l'audio registrato ha volume maggiore del threshold
+    # allora registra e plotta le cose
+    if rms >= THRESHOLD:
     
-    # convert data to integers, make np array, then offset it by 127
-    # faccio diventare i dati comprensibili
-    data_int = struct.unpack(str(2 * CHUNK) + 'B', data)
-    
-    # create np array and offset by 128
-    data_np = np.array(data_int, dtype='b')[::2] + 128
-    
-    #---- audio waveform ----#
-    # setto i dati sull'asse y nel while così si aggiornano
-    line.set_ydata(data_np)
-    
-    #---- audio spectrum ----#
-    # faccio la trasformata di fuorier per prendermi le frequenze
-    yf = fft(data_int)
-    # setto i dati sull'asse y nel while così si aggiornano
-    line_fft.set_ydata(np.abs(yf[0:CHUNK])  / (128 * CHUNK))
-    
+        # convert data to integers, make np array, then offset it by 127
+        # faccio diventare i dati comprensibili
+        data_int = struct.unpack(str(2 * CHUNK) + 'B', data)
+        
+        # create np array and offset by 128
+        data_np = np.array(data_int, dtype='b')[::2] + 128
+        
+        #---- audio waveform ----#
+        # setto i dati sull'asse y nel while così si aggiornano
+        line.set_ydata(data_np)
+        
+        #---- audio spectrum ----#
+        # faccio la trasformata di fuorier per prendermi le frequenze
+        yf = fft(data_int)
+        # setto i dati sull'asse y nel while così si aggiornano
+        line_fft.set_ydata(np.abs(yf[0:CHUNK])  / (128 * CHUNK))
+
+    # se il volume è più basso del threshold 
+    # allora plotta segnale piatto
+    else:
+        line.set_ydata(128)
+        line_fft.set_ydata(0)
+
+
     # aggiorno la figura e incremento conteggio dei frame
     # ogni aggiornamento è un nuovo frame e in base al tempo segnato dal clock
     # posso calcolare gli fps
